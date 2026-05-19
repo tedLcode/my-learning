@@ -32,6 +32,8 @@ Common Annotations
 Notes
 - Dev tools and Actuator are especially useful during local development and for monitoring deployed services; secure actuator endpoints before exposing them.
 
+# Spring Boot — Notes (2026-05-19)
+
 IoC & Dependency Injection — Notes (2026-05-19)
 
 The problem first
