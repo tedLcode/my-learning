@@ -32,3 +32,41 @@ Common Annotations
 Notes
 - Dev tools and Actuator are especially useful during local development and for monitoring deployed services; secure actuator endpoints before exposing them.
 
+IoC & Dependency Injection — Notes (2026-05-19)
+
+The problem first
+- Normal Java code creates its own objects; IoC inverts that control so Spring creates and manages objects (beans) instead.
+
+Inversion of Control (IoC)
+- Spring's IoC Container creates objects, holds them, and provides them to classes that need them. You ask for a `Coach` and Spring decides which implementation to create and inject.
+
+Dependency Injection (DI)
+- DI is how Spring provides dependencies to classes. Example:
+
+Without DI — class creates its own dependency:
+- `private FileReader reader = new FileReader();`
+
+With DI — Spring injects the dependency (recommended: constructor injection):
+- `public PaymentService(FileReader reader) { this.reader = reader; }`
+
+Three injection styles
+1. Constructor injection (recommended) — use `@Autowired` on the constructor or rely on single-constructor autowiring.
+2. Setter injection — Spring calls a setter method annotated with `@Autowired`.
+3. Field injection — `@Autowired` on a field (works but less testable).
+
+Key annotations
+- `@Component` / `@Service` — register a class as a Spring bean.
+- `@Autowired` — request an injected dependency.
+- `@Qualifier("beanName")` / `@Primary` — disambiguate when multiple beans match.
+- `@SpringBootApplication` — triggers component scanning that finds `@Component` beans.
+
+How it works (flow)
+1. App starts → `@SpringBootApplication` triggers component scan
+2. Spring finds `@Component` classes and creates bean instances
+3. Beans are stored in the IoC container
+4. When a class has dependencies (`@Autowired`), Spring pulls matching beans from the container and injects them
+
+Connection to MQ repos
+- Look for `@Component`/`@Service` classes, constructors requesting injected beans, `application.properties` values injected with `@Value`, and no manual MQ connection creation — Spring wires them for production use.
+
+
