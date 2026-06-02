@@ -26,11 +26,22 @@
 - Finalized routing and time validation.
 - Identified follow-up work for DEV/UAT/PROD configuration and Sonar stage in the deployment pipeline.
 
+### 2026-06-01
+- Rewrote the full routing logic from the CSV ground truth.
+- Fixed filename and path handling, ACK/NACK prefix matching, missing job mappings, and weekend skipping.
+- Updated the test suite and validated sequential batch behavior.
+
+### 2026-06-02
+- Updated the CloudFormation template to externalize Lambda runtime configuration.
+- Wired DEV parameters through `dev_params.yml` and reviewed Jenkins branch and checkout flow.
+- Confirmed the template-side work is ready for Jenkins build execution.
+
 ## Current Status
-- Logic complete.
-- Remaining work: environment configuration and deployment pipeline improvements.
+- Routing logic complete and validated.
+- Template and parameter wiring complete.
+- Remaining work: Jenkins execution and pipeline validation.
 
 ## Next Checks
-- Validate file naming rules with the team.
-- Confirm environment variable handling for DEV, UAT, and PROD.
-- Add or verify Sonar stage in the Lambda pipeline.
+- Run the Jenkins pipeline.
+- Validate deployment packaging and execution in CI.
+- Confirm Sonar stage behavior if the pipeline requires it.
