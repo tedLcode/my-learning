@@ -1,20 +1,14 @@
-# Task Summary — MQ Producer DDL Updates: Producer/Consumer Task Separation
+# Task Summary — DDL Updates for MQ Producer/Consumer Activity Audit
 
 **Role:** Apprentice Engineer — FMT Tax & Treasury, Fidelity
 **Duration:** June 2026
-**Story/Task:** TRETAX-11905 / TRETAX-11923 — DDL Updates for MQ Activity Metadata
+**Story/Task:** TRETAX-11923 — DDL Updates for MQ Activity Audit Tables
 
 ---
 
 ## What Was the Task
 
-The Treasury MQ Producer application required database metadata changes to support explicit differentiation between producer and consumer activity flows. The existing audit schema used a single generic task entry (MQ_ACTIVITY_AUDIT) for all MQ operations, but the system needed to evolve to track producer and consumer activities separately while maintaining backward compatibility across fresh deployments and existing environments (DEV/UAT/PROD).
-
-The task was to design and prepare the DDL/DML strategy to:
-1. Retain the generic task type (MQ_ACTIVITY_AUDIT_TASK) for categorization
-2. Rename the existing task entry to explicitly represent producer activity (MQ_PRODUCER_ACTIVITY_AUDIT)
-3. Add a new task entry for consumer activity (MQ_CONSUMER_ACTIVITY_AUDIT)
-4. Support both fresh installations and existing environments without conflicts
+The Treasury BDI platform needed its MQ audit infrastructure updated to support both producer and consumer applications separately. Previously, a single generic audit task entry existed for MQ activity. The requirement was to rename existing DDL objects to be producer-specific and create metadata entries for both producer and consumer, enabling independent audit logging with proper foreign key references.
 
 ---
 
@@ -22,58 +16,47 @@ The task was to design and prepare the DDL/DML strategy to:
 
 | # | Activity |
 |---|----------|
-| 1 | Attended Sprint Planning and received assignment for TRETAX-11905 (DDL Updates subtask TRETAX-11923) |
-| 2 | Explored the MQ Producer application codebase (develop branch) to understand architecture and processing flow |
-| 3 | Reviewed application flow: S3FileScheduler → FileProcessServiceImpl → MQProducerServiceImpl → AuditLogServiceImpl |
-| 4 | Mapped interactions between S3, IBM MQ, and database audit tracking components |
-| 5 | Analyzed the core table relationship chain: BDI_MQ_ACTIVITY_AUDIT → BDI_LOAD_AUDIT → BDI_TASK → BDI_TASK_TYPE |
-| 6 | Reviewed and studied key DDL scripts: CR_BDI_LOAD_AUDIT.sql, CR_BDI_TASK.sql, CR_BDI_TASK_TYPE.sql |
-| 7 | Reviewed key DML scripts: INS_MQ_ACTIVITY_VALIDATION.sql, INS_BDI_TASK_TYPE_INCIDENT_CREATION.sql |
-| 8 | Mapped foreign key dependencies and task-type relationships to ensure referential integrity |
-| 9 | Identified the existing structure: one task type (MQ_ACTIVITY_AUDIT_TASK) and one task (MQ_ACTIVITY_AUDIT) |
-| 10 | Designed metadata structure for producer/consumer separation — generic task type retained, separate task entries introduced |
-| 11 | Planned two-path SQL strategy: fresh install path (seed both producer and consumer tasks) and existing environment migration path (separate update script to avoid conflicts) |
-| 12 | Applied safe database evolution practices to ensure backward compatibility and no disruption to existing producer flows |
+| 1 | Explored the MQ Producer Java application codebase to understand the end-to-end message flow (S3 → MQ → DB audit) |
+| 2 | Mapped the full foreign key chain: `bdi_mq_activity_audit` → `bdi_load_audit` → `bdi_task` → `bdi_task_type` |
+| 3 | Connected to DEV PostgreSQL via pgAdmin and queried existing metadata to identify current state and duplicates |
+| 4 | Renamed DDL objects (sequence, table, column, PK/FK constraints) from generic `MQ_ACTIVITY_AUDIT` to producer-specific `MQ_PRODUCER_ACTIVITY_AUDIT` |
+| 5 | Created an ALTER migration script with `IF EXISTS` guards for safe execution across DEV/UAT environments |
+| 6 | Rewrote the DML seed script (`INS_BDI_MQ_ACTIVITY_AUDIT.sql`) to be production-ready — inserts task type + producer task + consumer task using `RETURNING` pattern |
+| 7 | Validated no other scripts in the repo were affected by the rename via full-text search |
+| 8 | Pushed changes to feature branch for review |
 
 ---
 
 ## Technologies & Tools Used
 
-- **SQL** — DDL (Data Definition Language) and DML (Data Manipulation Language) script authoring
-- **PostgreSQL / Amazon RDS** — ORDS database engine for BDI metadata tables
-- **BDI Metadata Schema** — BDI_TASK_TYPE, BDI_TASK, BDI_LOAD_AUDIT, BDI_MQ_ACTIVITY_AUDIT tables
-- **IBM MQ** — message queue infrastructure used by the producer application
-- **MQ Producer Application** — Java-based service orchestrating S3 → MQ → Database flow
-- **Git** — version control for scripts and application code
-- **Jira** — task tracking (TRETAX-11905, TRETAX-11923)
-- **Confluence** — reference documentation and schema discovery
+- **PostgreSQL** — target database for DDL/DML changes (schemas: `bdi_audit`, `bdi_metadata`)
+- **pgAdmin 4** — database exploration, query validation, FK chain verification
+- **Git** — version control, feature branching, commit and push
+- **VS Code** — SQL script editing and workspace navigation
+- **Jenkins (Groovy)** — deployment pipeline awareness (scripts deployed via Jenkins jobs)
 
 ---
 
 ## Outcome
 
-- Completed comprehensive exploration of MQ Producer application architecture and database layer
-- Built a complete mental model of the BDI audit table chain and relational integrity requirements
-- Designed production-ready metadata seeding strategy supporting producer/consumer separation
-- Identified clear path for task differentiation without disrupting existing producer flows
-- Planned two-part deployment strategy: fresh install and existing environment migration
-- Ensured backward compatibility and no conflicts with pre-seeded data in DEV/UAT environments
-- Story TRETAX-11905 with subtask TRETAX-11923 in progress; design phase complete, ready for SQL script authoring and team review
+- Producer audit table, sequence, and constraints renamed to clearly identify producer-specific objects
+- New consumer task metadata entry created alongside renamed producer entry
+- Production-ready DML script prepared for clean PROD deployment
+- Separate ALTER migration script created for existing DEV/UAT environments
+- All changes validated to have zero impact on existing repo scripts or running applications
 
 ---
 
 ## Skills Demonstrated
 
-- Enterprise database schema analysis and relational integrity understanding
-- DDL/DML design and versioning strategy for multi-environment deployments
-- Safe database evolution practices (supporting fresh installs and existing environments)
-- Application architecture comprehension and end-to-end flow mapping
-- Metadata design for extensibility and audit clarity
-- Backward compatibility considerations in system evolution
-- End-to-end task ownership: requirement analysis → exploration → design → planning
+- Database schema analysis and foreign key relationship mapping across multiple schemas
+- Writing safe, idempotent DDL migration scripts (ALTER with IF EXISTS)
+- Production-ready DML scripting with proper use of PostgreSQL `RETURNING` clause
+- Impact analysis across a multi-file SQL deployment repository
+- End-to-end ownership of a DDL change from requirement gathering through implementation and deployment prep
 
 ---
 
 ## Resume One-Liner
 
-> *Designed production-ready DDL/DML strategy to separate producer and consumer activity tracking in Treasury MQ platform metadata, ensuring backward compatibility across fresh deployments and existing DEV/UAT/PROD environments while maintaining audit integrity and system extensibility.*
+> *Designed and implemented PostgreSQL DDL/DML changes to split a generic MQ audit infrastructure into producer- and consumer-specific metadata entries, including safe ALTER migration scripts and production-ready seed logic, for the Treasury BDI platform at Fidelity.*
